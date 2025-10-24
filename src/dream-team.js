@@ -16,16 +16,11 @@ const { NotImplementedError } = require('../lib');
 function createDreamTeam(members) {
   if (!Array.isArray(members)) return false;
 
-  const initials = [];
-
-  for (const item of members) {
-    if (typeof item === 'string') {
-      const trimmed = item.trim();
-      if (trimmed.length > 0) {
-        initials.push(trimmed[0].toUpperCase);
-      }
-    }
-  }
+  const initials = members
+    .filter(v => typeof v === 'string')
+    .map(s => s.trim())
+    .filter(s => s.length > 0)
+    .map(s => s[0].toUpperCase());
 
   return initials.sort().join('');
 }
