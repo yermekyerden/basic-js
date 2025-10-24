@@ -14,10 +14,13 @@ const { NotImplementedError } = require('../lib');
  *
  */
 function transform(arr) {
-  if (!Array.isArray(arr))
+  if (!Array.isArray(arr)) {
     throw new Error("'arr' parameter must be an instance of the Array!");
+  }
 
   const res = [];
+  const pushedIdx = [];
+
   const isControl = (v) =>
     v === '--discard-next' ||
     v === '--discard-prev' ||
@@ -25,14 +28,18 @@ function transform(arr) {
     v === '--double-prev';
 
   let skipNext = false;
-  let prevWasDiscarded = false;
 
   for (let i = 0; i < arr.length; i++) {
     const cur = arr[i];
 
     if (skipNext) {
       skipNext = false;
-      prevWasDiscarded = false;
+      continue;
+    }
+
+    if (!isControl(cur)) {
+      res.push(cur);
+      pushedIdx.push(i);
       continue;
     }
 
@@ -41,34 +48,32 @@ function transform(arr) {
         if (i + 1 < arr.length) {
           skipNext = true;
         }
-        prevWasDiscarded = false;
         break;
 
-      case '--discard-prev':
-        if (!prevWasDiscarded && res.length > 0) {
+      case '--discard-prev': {
+        const lastEmittedIdx = pushedIdx[pushedIdx.length - 1];
+        if (lastEmittedIdx === i - 1) {
           res.pop();
+          pushedIdx.pop();
         }
-        prevWasDiscarded = false;
         break;
+      }
 
       case '--double-next':
         if (i + 1 < arr.length && !isControl(arr[i + 1])) {
           res.push(arr[i + 1]);
+          pushedIdx.push(i + 1);
         }
-        prevWasDiscarded = false;
         break;
 
-      case '--double-prev':
-        if (!prevWasDiscarded && res.length > 0) {
-          res.push(res[res.length - 1]);
+      case '--double-prev': {
+        const lastEmittedIdx = pushedIdx[pushedIdx.length - 1];
+        if (lastEmittedIdx === i - 1) {
+          res.push(arr[i - 1]);
+          pushedIdx.push(i - 1);
         }
-        prevWasDiscarded = false;
         break;
-
-      default:
-        res.push(cur);
-        prevWasDiscarded = false;
-        break;
+      }
     }
   }
 
